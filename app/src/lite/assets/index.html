@@ -6453,25 +6453,37 @@ function togglePinCard(id) {
   renderTVCategories();
   renderTVGrid(getFilteredChannels());
 }
+var _workingIdsCache = null;
+var _workingSetCache = null;
 function getWorkingIds() {
+  if (_workingIdsCache !== null) return _workingIdsCache;
   try {
     if (window.AndroidBridge && window.AndroidBridge.getSessionData) {
       var val = AndroidBridge.getSessionData('workingStreams');
-      if (val) return JSON.parse(val);
+      if (val) { _workingIdsCache = JSON.parse(val); _workingSetCache = new Set(_workingIdsCache); return _workingIdsCache; }
     }
   } catch(e) {}
   try {
     var stored = localStorage.getItem('workingStreams');
-    if (stored) return JSON.parse(stored);
+    if (stored) { _workingIdsCache = JSON.parse(stored); _workingSetCache = new Set(_workingIdsCache); return _workingIdsCache; }
   } catch(e) {}
-  return DEFAULT_WORKING_STREAMS || [];
+  _workingIdsCache = DEFAULT_WORKING_STREAMS || [];
+  _workingSetCache = new Set(_workingIdsCache);
+  return _workingIdsCache;
+}
+function isWorking(id) {
+  if (_workingSetCache === null) getWorkingIds();
+  return _workingSetCache.has(id);
 }
 function markStreamWorking(id) {
   var ids = getWorkingIds();
-  if (ids.indexOf(id) === -1) ids.push(id);
-  var json = JSON.stringify(ids);
-  localStorage.setItem('workingStreams', json);
-  try { if (window.AndroidBridge && window.AndroidBridge.setSessionData) AndroidBridge.setSessionData('workingStreams', json); } catch(e) {}
+  if (ids.indexOf(id) === -1) {
+    ids.push(id);
+    _workingSetCache.add(id);
+    var json = JSON.stringify(ids);
+    localStorage.setItem('workingStreams', json);
+    try { if (window.AndroidBridge && window.AndroidBridge.setSessionData) AndroidBridge.setSessionData('workingStreams', json); } catch(e) {}
+  }
 }
 
 function initLiveTV() {
@@ -6776,7 +6788,7 @@ function renderNextBatch() {
   var htmlString = nextBatch.map(function(c) {
     var isActive = activeStreamUrl && activeStreamUrl === c.streamUrl ? 'active' : '';
     var isDrm = c.streamUrl.indexOf('clearkey') !== -1 || c.streamUrl.indexOf('.mpd') !== -1;
-    var worksNow = getWorkingIds().indexOf(c.id) !== -1;
+    var worksNow = isWorking(c.id);
     var badgeHtml = isDrm
       ? '<div class="tv-card-live-dot" style="color:#FF6B35;"><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#FF6B35;"></span> DRM</div>'
       : (worksNow
@@ -6820,7 +6832,6 @@ function setupScrollListener() {
 }
 
 function onTVChannelClick(c) {
-  try { markStreamWorking(c.id); } catch(e) {}
   if (c.streamUrl && window.AndroidBridge && window.AndroidBridge.playNativeStream) {
     var url = c.streamUrl;
     if (url.indexOf('clearkey||') === 0) {
