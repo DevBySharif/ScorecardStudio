@@ -54,6 +54,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import androidx.navigation3.runtime.NavKey
+import com.example.scorecardstudio.UpdateChecker
 import com.example.scorecardstudio.WebAppInterface
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -124,6 +125,35 @@ fun MainScreen(
       activity?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
       activity?.window?.decorView?.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
     }
+  }
+
+  var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
+  val updateChecked = remember { mutableStateOf(false) }
+
+  LaunchedEffect(Unit) {
+    if (!updateChecked.value) {
+      updateChecked.value = true
+      updateInfo = UpdateChecker.check(context)
+    }
+  }
+
+  updateInfo?.let { info ->
+    androidx.compose.material3.AlertDialog(
+      onDismissRequest = { updateInfo = null },
+      title = { androidx.compose.material3.Text("Update Available v${info.versionName}") },
+      text = { androidx.compose.material3.Text(info.releaseNotes) },
+      confirmButton = {
+        androidx.compose.material3.TextButton(onClick = {
+          updateInfo = null
+          UpdateChecker.openDownload(context, info)
+        }) { androidx.compose.material3.Text("Update Now") }
+      },
+      dismissButton = {
+        androidx.compose.material3.TextButton(onClick = { updateInfo = null }) {
+          androidx.compose.material3.Text("Later")
+        }
+      }
+    )
   }
 
   val filePickerLauncher = rememberLauncherForActivityResult(
