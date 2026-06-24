@@ -104,9 +104,7 @@ fun MainScreen(
   Column(modifier = modifier.fillMaxSize()) {
     if (playerUrl != null) {
       if (isFullscreen) {
-        Box(
-          modifier = Modifier.fillMaxSize().background(Color.Black)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
           AndroidView(
             factory = { ctx ->
               PlayerView(ctx).apply {
@@ -122,16 +120,11 @@ fun MainScreen(
             modifier = Modifier.fillMaxWidth().padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
-            IconButton(onClick = { playerUrl = null }) {
-              Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close", tint = Color.White)
+            IconButton(onClick = { isFullscreen = false }) {
+              Text("←", color = Color.White, fontSize = 20.sp)
             }
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = {
-              isFullscreen = false
-              (context as? androidx.activity.ComponentActivity)?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            }) {
-              Text("⛶", color = Color.White, fontSize = 18.sp)
-            }
+            Text(text = playerTitle, color = Color.White, fontSize = 14.sp)
           }
         }
       } else {
@@ -143,14 +136,11 @@ fun MainScreen(
             verticalAlignment = Alignment.CenterVertically
           ) {
             IconButton(onClick = { playerUrl = null }) {
-              Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close", tint = Color.White)
+              Text("✕", color = Color.White, fontSize = 16.sp)
             }
             Spacer(Modifier.width(4.dp))
             Text(text = playerTitle, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
-            IconButton(onClick = {
-              isFullscreen = true
-              (context as? androidx.activity.ComponentActivity)?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            }) {
+            IconButton(onClick = { isFullscreen = true }) {
               Text("⛶", color = Color.White, fontSize = 18.sp)
             }
           }
@@ -242,6 +232,10 @@ fun MainScreen(
               if (overlayShowing) {
                 evaluateJavascript("closeMatchDetail()", null)
                 overlayShowing = false
+                return@setOnKeyListener true
+              }
+              if (isFullscreen) {
+                isFullscreen = false
                 return@setOnKeyListener true
               }
               if (playerUrl != null) {
