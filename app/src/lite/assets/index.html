@@ -5584,7 +5584,7 @@ function renderTVDashboard() {
 
     rowHtml += secChannels.map(function(c) {
       var isActive = activeStreamUrl && activeStreamUrl === c.streamUrl ? 'active' : '';
-      var isDrm = c.streamUrl.indexOf('clearkey') !== -1 || c.streamUrl.indexOf('.mpd') !== -1;
+      var isDrm = c.streamUrl && (c.streamUrl.indexOf('clearkey') !== -1 || c.streamUrl.indexOf('.mpd') !== -1);
       var badgeHtml = isDrm
         ? '<div class="tv-card-live-dot" style="color:#FF6B35; font-size:7px;"><span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#FF6B35;"></span> DRM</div>'
         : '<div class="tv-card-live-dot" style="font-size:7px;"><span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#9FEF00;animation:flash 1.5s infinite;"></span> LIVE</div>';

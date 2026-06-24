@@ -208,14 +208,14 @@ fun MainScreen(
             domStorageEnabled = true
             allowFileAccess = true
             allowContentAccess = true
-            allowUniversalAccessFromFileURLs = true
-            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = false
+            allowFileAccessFromFileURLs = false
             mediaPlaybackRequiresUserGesture = false
             cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-            mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            saveFormData = true
+            mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            saveFormData = false
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-              safeBrowsingEnabled = false
+              safeBrowsingEnabled = true
             }
             userAgentString = "Mozilla/5.0 (Linux; Android 14; SM-A146U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.200 Mobile Safari/537.36"
           }
@@ -230,7 +230,7 @@ fun MainScreen(
               return true
             }
             override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
-              handler?.proceed()
+              handler?.cancel()
             }
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
               super.onPageStarted(view, url, favicon)
