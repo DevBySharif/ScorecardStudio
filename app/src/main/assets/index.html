@@ -5450,8 +5450,8 @@ function playTVChannel(c) {
     }
   }
   
-  // Use Dash.js for MPD streams
-  if (playUrl.indexOf('.mpd') !== -1 || protectionData !== null) {
+  // Use Dash.js for MPD streams only
+  if (playUrl.indexOf('.mpd') !== -1) {
     if (typeof dashjs !== 'undefined') {
       dashPlayer = dashjs.MediaPlayer().create();
       if (protectionData) {

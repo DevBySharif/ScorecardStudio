@@ -18,14 +18,39 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import androidx.navigation3.runtime.NavKey
 import com.example.scorecardstudio.WebAppInterface
 
@@ -36,6 +61,31 @@ fun MainScreen(
   modifier: Modifier = Modifier,
 ) {
   var uploadCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+  var playerUrl by remember { mutableStateOf<String?>(null) }
+  var playerTitle by remember { mutableStateOf("") }
+  val context = LocalContext.current
+
+  val exoPlayer = remember {
+    ExoPlayer.Builder(context).build().apply {
+      playWhenReady = true
+      repeatMode = Player.REPEAT_MODE_OFF
+    }
+  }
+
+  DisposableEffect(Unit) {
+    onDispose { exoPlayer.release() }
+  }
+
+  LaunchedEffect(playerUrl) {
+    if (playerUrl != null) {
+      val mediaItem = MediaItem.fromUri(playerUrl!!)
+      exoPlayer.setMediaItem(mediaItem)
+      exoPlayer.prepare()
+    } else {
+      exoPlayer.stop()
+      exoPlayer.clearMediaItems()
+    }
+  }
 
   val filePickerLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.GetContent()
@@ -45,16 +95,17 @@ fun MainScreen(
     uploadCallback = null
   }
 
-  AndroidView(
-    factory = { context ->
-      var overlayShowing = false
+  Box(modifier = modifier.fillMaxSize()) {
+    AndroidView(
+      factory = { ctx ->
+        var overlayShowing = false
 
-        WebView(context).apply {
+        WebView(ctx).apply {
           settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            allowFileAccess = false
-            allowContentAccess = false
+            allowFileAccess = true
+            allowContentAccess = true
             allowUniversalAccessFromFileURLs = true
             allowFileAccessFromFileURLs = true
             mediaPlaybackRequiresUserGesture = false
@@ -107,13 +158,20 @@ fun MainScreen(
               overlayShowing = visible
             }
           }, "NativeBridge")
-          addJavascriptInterface(WebAppInterface(context), "AndroidBridge")
+          addJavascriptInterface(WebAppInterface(context) { url, title ->
+            playerUrl = url
+            playerTitle = title
+          }, "AndroidBridge")
 
           setOnKeyListener { _, keyCode, event ->
             if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
               if (overlayShowing) {
                 evaluateJavascript("closeMatchDetail()", null)
                 overlayShowing = false
+                return@setOnKeyListener true
+              }
+              if (playerUrl != null) {
+                playerUrl = null
                 return@setOnKeyListener true
               }
             }
@@ -123,9 +181,53 @@ fun MainScreen(
           isFocusableInTouchMode = true
           requestFocus()
 
-          loadUrl("file:///android_asset/index.html")
+          val htmlContent = ctx.assets.open("index.html").bufferedReader().use { it.readText() }
+          loadDataWithBaseURL("https://app.scorecardstudio.local/", htmlContent, "text/html", "UTF-8", null)
         }
-    },
-    modifier = modifier.fillMaxSize()
-  )
+      },
+      modifier = Modifier.fillMaxSize()
+    )
+
+    if (playerUrl != null) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(Color.Black)
+      ) {
+        AndroidView(
+          factory = { ctx ->
+            PlayerView(ctx).apply {
+              player = exoPlayer
+              useController = true
+              resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+              setBackgroundColor(android.graphics.Color.BLACK)
+            }
+          },
+          modifier = Modifier.fillMaxSize()
+        )
+
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          IconButton(onClick = { playerUrl = null }) {
+            Icon(
+              Icons.AutoMirrored.Filled.ArrowBack,
+              contentDescription = "Close",
+              tint = Color.White
+            )
+          }
+          Spacer(Modifier.width(8.dp))
+          Text(
+            text = playerTitle,
+            color = Color.White,
+            fontSize = 16.sp
+          )
+        }
+      }
+    }
+  }
 }

@@ -13,8 +13,8 @@ android {
         applicationId = "com.footballeon.scorecardstudio"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.1.0"
     }
 
     flavorDimensions += "version"
@@ -22,12 +22,12 @@ android {
         create("studio") {
             dimension = "version"
             applicationId = "com.footballeon.scorecardstudio"
-            versionName = "1.0.0"
+            versionName = "1.1.0"
         }
         create("lite") {
             dimension = "version"
             applicationId = "com.footballeon.scorecardstudio.lite"
-            versionName = "1.0.0"
+            versionName = "1.1.0"
         }
     }
 

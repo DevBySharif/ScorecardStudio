@@ -5759,7 +5759,16 @@ function setupScrollListener() {
 }
 
 function onTVChannelClick(c) {
-  playTVChannel(c);
+  if (c.streamUrl && window.AndroidBridge && window.AndroidBridge.playNativeStream) {
+    var url = c.streamUrl;
+    if (url.indexOf('clearkey||') === 0) {
+      var parts = url.split('||');
+      if (parts.length >= 3) url = parts[2];
+    }
+    AndroidBridge.playNativeStream(url, c.name);
+  } else {
+    playTVChannel(c);
+  }
 }
 
 function playTVChannel(c) {
@@ -5829,8 +5838,8 @@ function playTVChannel(c) {
     }
   }
   
-  // Use Dash.js for MPD streams
-  if (playUrl.indexOf('.mpd') !== -1 || protectionData !== null) {
+  // Use Dash.js for MPD streams only
+  if (playUrl.indexOf('.mpd') !== -1) {
     if (typeof dashjs !== 'undefined') {
       dashPlayer = dashjs.MediaPlayer().create();
       if (protectionData) {
