@@ -14,10 +14,13 @@ import android.util.Base64
 import android.webkit.JavascriptInterface
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.example.scorecardstudio.data.SessionDataStore
 import java.io.File
 import java.io.FileOutputStream
 
 class WebAppInterface(private val context: Context) {
+
+    private val sessionStore = SessionDataStore(context)
 
     @JavascriptInterface
     fun trackEvent(name: String, label: String) {
@@ -143,6 +146,43 @@ class WebAppInterface(private val context: Context) {
                     }
                 }
             }
+        } catch (e: Exception) {
+            FirebaseHelper.recordException(e)
+        }
+    }
+
+    @JavascriptInterface
+    fun getSessionData(key: String): String {
+        return try {
+            sessionStore.getString(key)
+        } catch (e: Exception) {
+            FirebaseHelper.recordException(e)
+            ""
+        }
+    }
+
+    @JavascriptInterface
+    fun setSessionData(key: String, value: String) {
+        try {
+            sessionStore.setString(key, value)
+        } catch (e: Exception) {
+            FirebaseHelper.recordException(e)
+        }
+    }
+
+    @JavascriptInterface
+    fun removeSessionData(key: String) {
+        try {
+            sessionStore.remove(key)
+        } catch (e: Exception) {
+            FirebaseHelper.recordException(e)
+        }
+    }
+
+    @JavascriptInterface
+    fun clearSession() {
+        try {
+            sessionStore.clear()
         } catch (e: Exception) {
             FirebaseHelper.recordException(e)
         }

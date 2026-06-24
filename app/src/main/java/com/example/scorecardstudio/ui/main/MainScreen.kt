@@ -58,17 +58,15 @@ fun MainScreen(
           allowUniversalAccessFromFileURLs = false
           allowFileAccessFromFileURLs = false
           mediaPlaybackRequiresUserGesture = false
-          cacheMode = android.webkit.WebSettings.LOAD_NO_CACHE
+          cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
           mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
-          saveFormData = false
+          saveFormData = true
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             safeBrowsingEnabled = true
           }
         }
         CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
-        CookieManager.getInstance().removeAllCookies(null)
-        clearCache(true)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
         webViewClient = object : WebViewClient() {
           override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
             val url = request?.url?.toString() ?: return false

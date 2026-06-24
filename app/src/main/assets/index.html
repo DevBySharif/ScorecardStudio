@@ -4982,10 +4982,18 @@ function getTVSubcat(channel) {
 }
 
 function getPinnedIds() {
+  try {
+    if (window.AndroidBridge && window.AndroidBridge.getSessionData) {
+      var val = AndroidBridge.getSessionData('tvPinned');
+      if (val) return JSON.parse(val);
+    }
+  } catch(e) {}
   try { return JSON.parse(localStorage.getItem('tvPinned') || '[]'); } catch(e) { return []; }
 }
 function setPinnedIds(ids) {
-  localStorage.setItem('tvPinned', JSON.stringify(ids));
+  var json = JSON.stringify(ids);
+  localStorage.setItem('tvPinned', json);
+  try { if (window.AndroidBridge && window.AndroidBridge.setSessionData) AndroidBridge.setSessionData('tvPinned', json); } catch(e) {}
 }
 function togglePin(id) {
   var ids = getPinnedIds();
@@ -5460,7 +5468,9 @@ function playTVChannel(c) {
     });
   }
   
-  localStorage.setItem('lastTVChannel', JSON.stringify(c));
+  var json = JSON.stringify(c);
+  localStorage.setItem('lastTVChannel', json);
+  try { if (window.AndroidBridge && window.AndroidBridge.setSessionData) AndroidBridge.setSessionData('lastTVChannel', json); } catch(e) {}
 }
 
 function openActiveStreamInBrowser() {
