@@ -19,13 +19,13 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,8 +40,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +63,7 @@ fun MainScreen(
   var uploadCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
   var playerUrl by remember { mutableStateOf<String?>(null) }
   var playerTitle by remember { mutableStateOf("") }
+  var webViewRef by remember { mutableStateOf<WebView?>(null) }
   val context = LocalContext.current
 
   val exoPlayer = remember {
@@ -78,12 +79,15 @@ fun MainScreen(
 
   LaunchedEffect(playerUrl) {
     if (playerUrl != null) {
+      android.util.Log.d("ExoPlayer", "Playing: $playerUrl")
       val mediaItem = MediaItem.fromUri(playerUrl!!)
       exoPlayer.setMediaItem(mediaItem)
       exoPlayer.prepare()
+      webViewRef?.evaluateJavascript("hidePlayerContainer()", null)
     } else {
       exoPlayer.stop()
       exoPlayer.clearMediaItems()
+      webViewRef?.evaluateJavascript("showPlayerContainer()", null)
     }
   }
 
@@ -95,12 +99,13 @@ fun MainScreen(
     uploadCallback = null
   }
 
-  Box(modifier = modifier.fillMaxSize()) {
+  Column(modifier = modifier.fillMaxSize()) {
     AndroidView(
       factory = { ctx ->
         var overlayShowing = false
 
         WebView(ctx).apply {
+          webViewRef = this
           settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -185,32 +190,19 @@ fun MainScreen(
           loadDataWithBaseURL("https://app.scorecardstudio.local/", htmlContent, "text/html", "UTF-8", null)
         }
       },
-      modifier = Modifier.fillMaxSize()
+      modifier = if (playerUrl != null) Modifier.weight(1f) else Modifier.fillMaxSize()
     )
 
     if (playerUrl != null) {
-      Box(
+      Column(
         modifier = Modifier
-          .fillMaxSize()
+          .fillMaxWidth()
           .background(Color.Black)
       ) {
-        AndroidView(
-          factory = { ctx ->
-            PlayerView(ctx).apply {
-              player = exoPlayer
-              useController = true
-              resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-              setBackgroundColor(android.graphics.Color.BLACK)
-            }
-          },
-          modifier = Modifier.fillMaxSize()
-        )
-
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
           IconButton(onClick = { playerUrl = null }) {
@@ -220,13 +212,26 @@ fun MainScreen(
               tint = Color.White
             )
           }
-          Spacer(Modifier.width(8.dp))
+          Spacer(Modifier.width(4.dp))
           Text(
             text = playerTitle,
             color = Color.White,
-            fontSize = 16.sp
+            fontSize = 14.sp
           )
         }
+        AndroidView(
+          factory = { ctx ->
+            PlayerView(ctx).apply {
+              player = exoPlayer
+              useController = true
+              resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+              setBackgroundColor(android.graphics.Color.BLACK)
+            }
+          },
+          modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+        )
       }
     }
   }

@@ -5635,6 +5635,16 @@ function openActiveStreamInBrowser() {
   openStreamUrlInBrowser(activeStreamUrl);
 }
 
+function hidePlayerContainer() {
+  var c = document.getElementById('tv-player-container');
+  if (c) c.style.display = 'none';
+}
+
+function showPlayerContainer() {
+  var c = document.getElementById('tv-player-container');
+  if (c) c.style.display = '';
+}
+
 var originalSwitchMainSection = switchMainSection;
 switchMainSection = function(sec) {
   originalSwitchMainSection(sec);
