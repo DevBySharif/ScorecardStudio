@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Football Eon</string>
+    <string name="privacy_policy_url">https://footballeon.app/privacy</string>
+    <string name="app_version">1.0.0</string>
+</resources>
