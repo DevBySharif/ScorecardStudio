@@ -93,12 +93,37 @@ fun MainScreen(
     }
   }
 
+  LaunchedEffect(isFullscreen) {
+    val activity = context as? androidx.activity.ComponentActivity
+    if (isFullscreen) {
+      activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+      activity?.window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+      activity?.window?.decorView?.systemUiVisibility = (
+        android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+        android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+        android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+        android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+        android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
+        android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+      )
+    } else {
+      activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      activity?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+      activity?.window?.decorView?.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
+    }
+  }
+
   val filePickerLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.GetContent()
   ) { uri: Uri? ->
     val results = if (uri != null) arrayOf(uri) else null
     uploadCallback?.onReceiveValue(results)
     uploadCallback = null
+  }
+
+  androidx.activity.compose.BackHandler(playerUrl != null || isFullscreen) {
+    if (isFullscreen) isFullscreen = false
+    else playerUrl = null
   }
 
   Column(modifier = modifier.fillMaxSize()) {
@@ -116,15 +141,11 @@ fun MainScreen(
             },
             modifier = Modifier.fillMaxSize()
           )
-          Row(
-            modifier = Modifier.fillMaxWidth().padding(4.dp),
-            verticalAlignment = Alignment.CenterVertically
+          IconButton(
+            onClick = { isFullscreen = false },
+            modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
           ) {
-            IconButton(onClick = { isFullscreen = false }) {
-              Text("←", color = Color.White, fontSize = 20.sp)
-            }
-            Spacer(Modifier.weight(1f))
-            Text(text = playerTitle, color = Color.White, fontSize = 14.sp)
+            Text("←", color = Color.White, fontSize = 22.sp)
           }
         }
       } else {
