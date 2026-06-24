@@ -2068,26 +2068,6 @@ select.inp option, select.card-size-select option {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.tv-card-browser {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  font-size: 13px;
-  cursor: pointer;
-  color: #fff;
-  z-index: 2;
-  background: rgba(0,0,0,0.5);
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-.tv-card-browser:hover {
-  background: rgba(159,239,0,0.3);
-}
 .pin-star {
   position: absolute;
   top: 4px;
@@ -5339,11 +5319,8 @@ function renderNextBatch() {
       logoUrl: c.logoUrl.replace(/"/g, '&quot;')
     };
     
-    var safeUrl = c.streamUrl.replace(/"/g, '&quot;').replace(/'/g, "\\'");
-    var openLinkHtml = c.streamUrl ? '<div class="tv-card-browser" onclick="event.stopPropagation();openStreamUrlInBrowser(\'' + safeUrl + '\')" title="Open in Browser">🌐</div>' : '';
     return '<div class="tv-card ' + isActive + '" data-id="' + c.id + '" onclick=\'onTVChannelClick(' + JSON.stringify(safeC).replace(/'/g, "\\'") + ')\'>'
       + '<div class="pin-star" onclick="event.stopPropagation();togglePinCard(\'' + c.id + '\')">' + (pinnedNow ? '★' : '☆') + '</div>'
-      + openLinkHtml
       + '<div class="tv-logo-container">'
       + '<img class="tv-logo-img" src="' + c.logoUrl + '" onerror="this.src=\'https://i.postimg.cc/JnkNc2c3/FE-TV-(2).png\'">'
       + '</div>'
@@ -5412,7 +5389,7 @@ function playTVChannel(c) {
   loadingTimeout = setTimeout(function() {
     if (loadingSpinner && loadingSpinner.style.display !== 'none') {
       if (loadingTitle) loadingTitle.innerText = '⚠️ Connection Timeout';
-      loadingChannel.innerText = c.name + ' - Tap 🌐 on the card or OPEN LINK below';
+      loadingChannel.innerText = c.name + ' - Tap OPEN LINK below to play in browser';
       if (loadingSpinner) loadingSpinner.style.display = 'none';
       if (loadingFallback) loadingFallback.style.display = 'inline-block';
       loading.style.opacity = '1';
@@ -5474,7 +5451,7 @@ function playTVChannel(c) {
       dashPlayer.on(dashjs.MediaPlayer.events.ERROR, function(e) {
         
         if (loadingTitle) loadingTitle.innerText = '⚠️ DRM Error / Unsupported';
-        loadingChannel.innerText = 'Tap 🌐 on the card or OPEN LINK below';
+        loadingChannel.innerText = 'Tap OPEN LINK below to play in browser';
         if (loadingSpinner) loadingSpinner.style.display = 'none';
         if (loadingFallback) loadingFallback.style.display = 'inline-block';
         loading.style.opacity = '1';
@@ -5487,14 +5464,14 @@ function playTVChannel(c) {
       if (loadingFallback) loadingFallback.style.display = 'inline-block';
     }
   } 
-  // Try native HLS playback first (Android WebView supports m3u8 natively)
-  else if (playUrl.indexOf('.m3u8') !== -1 || playUrl.indexOf('.ts') !== -1) {
+  // Try native HLS playback first (Android MediaPlayer supports m3u8 natively)
+  else if (playUrl.indexOf('.m3u8') !== -1 && video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl') !== '') {
     var nativeFailed = false;
     var hlsFallbackTimer = setTimeout(function() {
       if (!nativeFailed && loadingSpinner && loadingSpinner.style.display !== 'none') {
         tryNativeFallback();
       }
-    }, 5000);
+    }, 12000);
     function tryNativeFallback() {
       if (nativeFailed) return;
       nativeFailed = true;
@@ -5513,10 +5490,12 @@ function playTVChannel(c) {
         hls.on(Hls.Events.MANIFEST_PARSED, function() {
           video.play().then(function() {
             if (loadingTimeout) clearTimeout(loadingTimeout);
+            try { markStreamWorking(c.id); } catch(e) {}
             loading.style.opacity = '0';
             loading.style.pointerEvents = 'none';
           }).catch(function() {
             if (loadingTimeout) clearTimeout(loadingTimeout);
+            try { markStreamWorking(c.id); } catch(e) {}
             loading.style.opacity = '0';
             loading.style.pointerEvents = 'none';
           });
@@ -5532,15 +5511,20 @@ function playTVChannel(c) {
                 break;
             }
             if (loadingTitle) loadingTitle.innerText = '⚠️ Stream Unavailable';
-            loadingChannel.innerText = 'Tap 🌐 on the card or OPEN LINK below';
+            loadingChannel.innerText = 'Tap OPEN LINK below to play in browser';
             if (loadingSpinner) loadingSpinner.style.display = 'none';
             if (loadingFallback) loadingFallback.style.display = 'inline-block';
             loading.style.opacity = '1';
             loading.style.pointerEvents = 'none';
-            break;
-        }
-      }
-    });
+          }
+        });
+      } else if (loadingTitle) {
+        loadingTitle.innerText = '⚠️ Stream Unavailable';
+        loadingChannel.innerText = 'Tap OPEN LINK below to play in browser';
+        if (loadingSpinner) loadingSpinner.style.display = 'none';
+        if (loadingFallback) loadingFallback.style.display = 'inline-block';
+        loading.style.opacity = '1';
+        loading.style.pointerEvents = 'none';
       }
     }
     video.addEventListener('error', function() {
@@ -5592,7 +5576,7 @@ function playTVChannel(c) {
             break;
         }
         if (loadingTitle) loadingTitle.innerText = '⚠️ Stream Unavailable';
-        loadingChannel.innerText = 'Tap 🌐 on the card or OPEN LINK below';
+        loadingChannel.innerText = 'Tap OPEN LINK below to play in browser';
         if (loadingSpinner) loadingSpinner.style.display = 'none';
         if (loadingFallback) loadingFallback.style.display = 'inline-block';
         loading.style.opacity = '1';

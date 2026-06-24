@@ -1,35 +1,26 @@
 # opencode Chat Session — ScorecardStudio
 
-**Workflow Agreement:**
-- Chat session file updated every session
-- App changes → build & deploy both flavors (Studio + Lite) to phone via ADB wireless
-- Website/HTML changes → push to GitHub
+**Workflow:** Session chat saved → App changes built & deployed (both flavors) → HTML changes pushed to GitHub
 
 ---
 
 ## Session 1 — Wed Jun 24 2026
 
 ### 1. Session Persistence
-- Stop clearing cookies/cache
-- SharedPreferences-based SessionDataStore
-- JS bridge for native session storage
-- Dual native+localStorage for pinned channels & last channel
-- Session prefs included in backup
+- Stop clearing cookies/cache, SharedPreferences SessionDataStore, JS bridge, dual native+localStorage
 
 ### 2. Live TV Fix — Round 1
-- `MIXED_CONTENT_ALWAYS_ALLOW`, `safeBrowsingEnabled = false`, SSL `proceed()`
-- HLS `enableWorker: false`, `lowLatencyMode: false`
-- Retry limits (3 NETWORK, 2 MEDIA), 15s timeout, UI error messages
+- Mixed content allow, safe browsing off, SSL proceed, HLS config fixes, retry limits, 15s timeout
 
 ### 3. Live TV Fix — Round 2
-- `allowUniversalAccessFromFileURLs = true` (CORS fix for file://)
-- Native Android HLS playback first → 5s fallback to Hls.js
+- `allowUniversalAccessFromFileURLs=true` (CORS), native HLS first → Hls.js fallback
 
-### 4. Working Streams Priority ✅ *(new)*
-- Tracks channels that successfully play via `markStreamWorking(id)`
-- Stores working IDs in native SharedPreferences + localStorage
-- **Sorts** working channels to top (after pinned, before untested) in every category
-- Shows **"✓ Works"** badge on working channel cards
-- All 6 success paths covered (Dash.js, native HLS, Hls.js, direct URLs)
+### 4. Working Streams Priority
+- Track successful plays, sort working to top (after pinned), "✓ Works" badge
 
-**Deployed:** Both Studio & Lite via ADB wireless + GitHub (commit `e8c796a`)
+### 5. 🌐 Open in Browser on Every Card *(latest)*
+- **🌐 button** on each channel card → tap to instantly open stream in external browser
+- **"OPEN IN BROWSER" button** inside loading overlay on any error (timeout, DRM, unavailable)
+- Works for all failure paths: timeout, network error, media error, DRM error, DASH missing
+
+**Deployed:** Both Studio & Lite (force reinstalled) + GitHub (commit `fa91650`)
