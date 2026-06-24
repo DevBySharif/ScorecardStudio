@@ -20,7 +20,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,8 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation3.runtime.NavKey
 import com.example.scorecardstudio.WebAppInterface
-import com.example.scorecardstudio.ui.player.VideoPlayerOverlay
-import com.example.scorecardstudio.ui.player.VideoPlayerState
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -48,17 +45,9 @@ fun MainScreen(
     uploadCallback = null
   }
 
-  val playRequest by VideoPlayerState.playRequest.collectAsState()
-
-  if (playRequest != null) {
-    VideoPlayerOverlay(
-      request = playRequest!!,
-      onClose = { VideoPlayerState.clearRequest() }
-    )
-  } else {
-    AndroidView(
-      factory = { context ->
-        var overlayShowing = false
+  AndroidView(
+    factory = { context ->
+      var overlayShowing = false
 
         WebView(context).apply {
           settings.apply {
@@ -136,8 +125,7 @@ fun MainScreen(
 
           loadUrl("file:///android_asset/index.html")
         }
-      },
-      modifier = modifier.fillMaxSize()
-    )
-  }
+    },
+    modifier = modifier.fillMaxSize()
+  )
 }

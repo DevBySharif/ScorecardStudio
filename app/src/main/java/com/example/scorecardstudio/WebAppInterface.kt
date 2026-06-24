@@ -15,7 +15,6 @@ import android.webkit.JavascriptInterface
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.scorecardstudio.data.SessionDataStore
-import com.example.scorecardstudio.ui.player.VideoPlayerState
 import java.io.File
 import java.io.FileOutputStream
 
@@ -155,7 +154,11 @@ class WebAppInterface(private val context: Context) {
     @JavascriptInterface
     fun playNativeStream(url: String, title: String) {
         try {
-            VideoPlayerState.requestPlay(url, title)
+            val intent = android.content.Intent(context, VideoPlayerActivity::class.java)
+            intent.putExtra("url", url)
+            intent.putExtra("title", title)
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
         } catch (e: Exception) {
             FirebaseHelper.recordException(e)
         }
