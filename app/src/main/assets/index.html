@@ -5435,8 +5435,73 @@ function playTVChannel(c) {
       if (loadingSpinner) loadingSpinner.style.display = 'none';
     }
   } 
-  // Use Hls.js for m3u8 streams
-  else if (typeof Hls !== 'undefined' && Hls.isSupported() && playUrl.indexOf('.mpd') === -1) {
+  // Try native HLS playback first (Android WebView supports m3u8 natively)
+  else if (playUrl.indexOf('.m3u8') !== -1 || playUrl.indexOf('.ts') !== -1) {
+    var nativeFailed = false;
+    var hlsFallbackTimer = setTimeout(function() {
+      if (!nativeFailed && loadingSpinner && loadingSpinner.style.display !== 'none') {
+        tryNativeFallback();
+      }
+    }, 5000);
+    function tryNativeFallback() {
+      if (nativeFailed) return;
+      nativeFailed = true;
+      clearTimeout(hlsFallbackTimer);
+      if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+        var hlsRetries = 0;
+        var hlsMediaRetries = 0;
+        hls = new Hls({
+          enableWorker: false,
+          maxBufferLength: 30,
+          liveBackBufferLength: 10,
+          lowLatencyMode: false
+        });
+        hls.loadSource(playUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          video.play().then(function() {
+            if (loadingTimeout) clearTimeout(loadingTimeout);
+            loading.style.opacity = '0';
+            loading.style.pointerEvents = 'none';
+          }).catch(function() {
+            if (loadingTimeout) clearTimeout(loadingTimeout);
+            loading.style.opacity = '0';
+            loading.style.pointerEvents = 'none';
+          });
+        });
+        hls.on(Hls.Events.ERROR, function(event, data) {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                if (hlsRetries < 3) { hlsRetries++; hls.startLoad(); return; }
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                if (hlsMediaRetries < 2) { hlsMediaRetries++; hls.recoverMediaError(); return; }
+                break;
+            }
+            if (loadingTitle) loadingTitle.innerText = '⚠️ Stream Unavailable';
+            loadingChannel.innerText = 'Try another channel or tap OPEN LINK';
+            if (loadingSpinner) loadingSpinner.style.display = 'none';
+            loading.style.opacity = '1';
+            loading.style.pointerEvents = 'none';
+          }
+        });
+      }
+    }
+    video.addEventListener('error', function() {
+      if (!nativeFailed) tryNativeFallback();
+    }, { once: true });
+    video.src = playUrl;
+    video.load();
+    video.play().then(function() {
+      clearTimeout(hlsFallbackTimer);
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      loading.style.opacity = '0';
+      loading.style.pointerEvents = 'none';
+    }).catch(function() {
+      if (!nativeFailed) tryNativeFallback();
+    });
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported() && playUrl.indexOf('.mpd') === -1) {
     var hlsRetries = 0;
     var hlsMediaRetries = 0;
     hls = new Hls({

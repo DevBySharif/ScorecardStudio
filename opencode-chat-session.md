@@ -1,51 +1,43 @@
 # opencode Chat Session — ScorecardStudio
 
-**Date:** Wed Jun 24 2026
+**Workflow Agreement:**
+- Chat session file updated every session
+- App changes → build & deploy both flavors (Studio + Lite) to phone via ADB wireless
+- Website/HTML changes → push to GitHub
 
 ---
 
-## User: app close hole jeno session same thake temon system koro
+## Session 1 — Wed Jun 24 2026
 
-**Assistant:** *(explored codebase, analyzed project structure)*
+### Request: App close hole jeno session same thake
 
-Made changes to persist session state across app restarts:
-
-### Changes made:
+**Changes:**
 
 1. **`MainScreen.kt`** — Removed `removeAllCookies(null)` and `clearCache(true)`, changed cache mode to `LOAD_DEFAULT`, enabled form data saving, enabled third-party cookies
-
 2. **`SessionDataStore.kt`** (new) — Native SharedPreferences-based storage for session data
-
-3. **`WebAppInterface.kt`** — Added `getSessionData`, `setSessionData`, `removeSessionData`, `clearSession` bridge methods for JavaScript ↔ native persistence
-
+3. **`WebAppInterface.kt`** — Added `getSessionData`, `setSessionData`, `removeSessionData`, `clearSession` bridge methods for JS ↔ native persistence
 4. **`index.html`** — `getPinnedIds()`, `setPinnedIds()`, and `lastTVChannel` now use native bridge + localStorage dual storage
-
 5. **`backup_rules.xml`** — Session preferences included in Android backup
 
----
-
-## User: tmr amr j chat session eitar kotha bolchi....r reply english a koro
-
-**Assistant:** Confirmed English replies going forward. Summarized the changes in English.
+**Deployed:** Both Studio & Lite via ADB wireless + pushed to GitHub
 
 ---
 
-## User: tmr amr j chat ei session a ...eita jeno na harai app close korleo
+### Request: Live TV stuck on "CONNECTING TO LIVE FEED..."
 
-**Assistant:** Explained that conversation persistence is handled by the opencode platform, not by the assistant directly. Suggested manual backup.
+**Root causes:**
+- `MIXED_CONTENT_NEVER_ALLOW` blocked HTTP streams (56% of channels)
+- `handler?.cancel()` blocked HTTPS streams with SSL errors
+- Safe browsing blocked IP-based stream URLs
+- HLS.js error handler retried silently forever with no UI feedback
+- No loading timeout → spinner never stopped
+- Web Workers not supported in WebView, low-latency mode incompatible
 
----
+**Fixes:**
 
-## User: tumi emon ekta system koro jeno...amr pc te ei chat session save thake
+| File | Change |
+|------|--------|
+| `MainScreen.kt` | `MIXED_CONTENT_ALWAYS_ALLOW`, `safeBrowsingEnabled = false`, SSL `handler?.proceed()` |
+| `index.html` | HLS `enableWorker: false`, `lowLatencyMode: false`, retry limits (3 NETWORK, 2 MEDIA), 15s timeout, UI error messages |
 
-**Assistant:** Saved conversation to `opencode-chat-session.md` in the project folder.
-
----
-
-## User: app a kono update korle seta...seta amr phn a via wireless debugging er maddhome update kore diba...website a kono update korle github a push kore diba...phn er ip and port 192.168.0.232:46853
-
-**Assistant:** 
-- Built APK via Gradle (BUILD SUCCESSFUL)
-- Installed via ADB wireless to `192.168.0.232:46853` (Success)
-- Phone model: Samsung SM-A146U (Galaxy A14)
-- GitHub remote: `https://github.com/DevBySharif/ScorecardStudio.git`
+**Deployed:** Both Studio & Lite via ADB wireless + pushed to GitHub

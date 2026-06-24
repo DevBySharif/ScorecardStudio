@@ -55,8 +55,8 @@ fun MainScreen(
           domStorageEnabled = true
           allowFileAccess = false
           allowContentAccess = false
-          allowUniversalAccessFromFileURLs = false
-          allowFileAccessFromFileURLs = false
+          allowUniversalAccessFromFileURLs = true
+          allowFileAccessFromFileURLs = true
           mediaPlaybackRequiresUserGesture = false
           cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
           mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
