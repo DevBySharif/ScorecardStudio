@@ -19,6 +19,7 @@
         <activity
             android:name="com.example.scorecardstudio.MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize"
             android:theme="@style/Theme.ScorecardStudio.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
