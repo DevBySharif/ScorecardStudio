@@ -6566,6 +6566,14 @@ function selectTVCategory(cat) {
   window.scrollTo(0, 0);
 }
 
+var CAT_PRIORITY = {
+  'Bangla': 1, 'Sports': 2, 'India': 3, 'News': 4,
+  'Entertainment': 5, 'Movies': 6, 'Kids & Cartoon': 7, 'Music': 8,
+  'Documentary': 9, 'Turkey': 10, 'Germany': 11, 'UK': 12,
+  'France': 13, 'Spain': 14, 'Italy': 15, 'Russia': 16,
+  'Ukraine': 17, 'Canada': 18, 'Greece': 19,
+  'North Macedonia': 20, 'Belarus': 21, 'Poland': 22, 'General': 99
+};
 function getFilteredChannels() {
   var searchInput = document.getElementById('tv-search');
   var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -6592,6 +6600,18 @@ function getFilteredChannels() {
       if (pinnedIds.indexOf(c.id) !== -1) pinned.push(c);
       else if (workingIds.indexOf(c.id) !== -1) working.push(c);
       else rest.push(c);
+    });
+    working.sort(function(a, b) {
+      var pa = CAT_PRIORITY[a.category] || 99;
+      var pb = CAT_PRIORITY[b.category] || 99;
+      if (pa !== pb) return pa - pb;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    rest.sort(function(a, b) {
+      var pa = CAT_PRIORITY[a.category] || 99;
+      var pb = CAT_PRIORITY[b.category] || 99;
+      if (pa !== pb) return pa - pb;
+      return (a.name || '').localeCompare(b.name || '');
     });
     result = pinned.concat(working).concat(rest);
   }
