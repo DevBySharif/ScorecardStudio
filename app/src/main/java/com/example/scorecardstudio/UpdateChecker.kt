@@ -12,8 +12,8 @@ import java.net.URL
 
 object UpdateChecker {
 
-  private const val VERSION_URL = "https://footballeon-web.netlify.app/version.json"
-  private const val BASE_URL = "https://footballeon-web.netlify.app"
+  private const val VERSION_URL = "https://footballeon.netlify.app/version.json"
+  private const val BASE_URL = "https://footballeon.netlify.app"
 
   data class UpdateInfo(
     val versionCode: Int,
