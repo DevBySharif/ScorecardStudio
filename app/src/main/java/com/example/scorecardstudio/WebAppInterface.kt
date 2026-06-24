@@ -20,7 +20,7 @@ import java.io.FileOutputStream
 
 class WebAppInterface(
     private val context: Context,
-    private val onPlayStream: ((url: String, title: String) -> Unit)? = null
+    private val onPlayStream: ((url: String, title: String, cid: String?) -> Unit)? = null
 ) {
 
     private val sessionStore = SessionDataStore(context)
@@ -162,8 +162,13 @@ class WebAppInterface(
     }
 
     @JavascriptInterface
+    fun playNativeStream(url: String, title: String, cid: String) {
+        onPlayStream?.invoke(url, title, cid)
+    }
+
+    @JavascriptInterface
     fun playNativeStream(url: String, title: String) {
-        onPlayStream?.invoke(url, title)
+        onPlayStream?.invoke(url, title, null)
     }
 
     @JavascriptInterface

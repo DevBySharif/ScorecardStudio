@@ -66,12 +66,23 @@ fun MainScreen(
   var playerTitle by remember { mutableStateOf("") }
   var webViewRef by remember { mutableStateOf<WebView?>(null) }
   var isFullscreen by remember { mutableStateOf(false) }
+  var pendingCid by remember { mutableStateOf<String?>(null) }
   val context = LocalContext.current
 
   val exoPlayer = remember {
     ExoPlayer.Builder(context).build().apply {
       playWhenReady = true
       repeatMode = Player.REPEAT_MODE_OFF
+      addListener(object : Player.Listener {
+        override fun onPlaybackStateChanged(state: Int) {
+          if (state == Player.STATE_READY) {
+            pendingCid?.let { cid ->
+              webViewRef?.evaluateJavascript("markStreamWorking('$cid')", null)
+            }
+            pendingCid = null
+          }
+        }
+      })
     }
   }
 
@@ -243,26 +254,17 @@ fun MainScreen(
               overlayShowing = visible
             }
           }, "NativeBridge")
-          addJavascriptInterface(WebAppInterface(context) { url, title ->
+          addJavascriptInterface(WebAppInterface(context) { url, title, cid ->
             playerUrl = url
             playerTitle = title
+            pendingCid = cid
           }, "AndroidBridge")
 
           setOnKeyListener { _, keyCode, event ->
-            if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-              if (overlayShowing) {
-                evaluateJavascript("closeMatchDetail()", null)
-                overlayShowing = false
-                return@setOnKeyListener true
-              }
-              if (isFullscreen) {
-                isFullscreen = false
-                return@setOnKeyListener true
-              }
-              if (playerUrl != null) {
-                playerUrl = null
-                return@setOnKeyListener true
-              }
+            if (keyCode == KeyEvent.KEYCODE_BACK && overlayShowing && event.action == KeyEvent.ACTION_UP) {
+              evaluateJavascript("closeMatchDetail()", null)
+              overlayShowing = false
+              return@setOnKeyListener true
             }
             false
           }
@@ -270,8 +272,7 @@ fun MainScreen(
           isFocusableInTouchMode = true
           requestFocus()
 
-          val htmlContent = ctx.assets.open("index.html").bufferedReader().use { it.readText() }
-          loadDataWithBaseURL("https://app.scorecardstudio.local/", htmlContent, "text/html", "UTF-8", null)
+          loadUrl("file:///android_asset/index.html")
         }
       },
       modifier = if (playerUrl != null) Modifier.weight(1f) else Modifier.fillMaxSize()

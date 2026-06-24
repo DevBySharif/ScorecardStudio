@@ -5238,120 +5238,7 @@ fetchESPNLiveScores();
 setInterval(fetchESPNLiveScores, 30000);
 
 
-function syncPlayerPosition() {
-  var wrapper = document.querySelector('.player-wrapper');
-  var placeholder = document.getElementById('tv-player-placeholder');
-  var sectionLiveTv = document.getElementById('section-livetv');
-  if (!wrapper || !placeholder) return;
-  
-  if (wrapper.classList.contains('webview-fullscreen')) {
-    return;
-  }
-  
-  if (wrapper.classList.contains('player-floating')) {
-    return;
-  }
-  
-  if (!sectionLiveTv || sectionLiveTv.style.display === 'none') {
-    wrapper.style.display = 'none';
-    return;
-  }
-  
-  var rect = placeholder.getBoundingClientRect();
-  wrapper.style.display = 'block';
-  wrapper.style.position = 'fixed';
-  wrapper.style.top = rect.top + 'px';
-  wrapper.style.left = rect.left + 'px';
-  wrapper.style.width = rect.width + 'px';
-  wrapper.style.height = rect.height + 'px';
-  wrapper.style.transform = 'none';
-  wrapper.style.zIndex = '100';
-}
-
-window.addEventListener('load', function() {
-  var wrapper = document.querySelector('.player-wrapper');
-  if (wrapper) {
-    document.body.appendChild(wrapper);
-  }
-  window.addEventListener('resize', syncPlayerPosition);
-  
-  window.addEventListener('scroll', syncPlayerPosition);
-  
-  setInterval(syncPlayerPosition, 100);
-});
-
-function togglePlayerFullscreen() {
-  var wrapper = document.querySelector('.player-wrapper');
-  var btn = document.getElementById('player-fullscreen-btn');
-  if (!wrapper || !btn) return;
-  
-  var isFullscreen = wrapper.classList.contains('webview-fullscreen');
-  
-  if (!isFullscreen) {
-    // ── Enter Fullscreen ──
-    wrapper.classList.add('webview-fullscreen');
-    
-    var w = window.innerWidth;
-    var h = window.innerHeight;
-    wrapper.style.position = 'fixed';
-    wrapper.style.top = '50%';
-    wrapper.style.left = '50%';
-    wrapper.style.width = h + 'px'; // Swap width and height for 90deg rotation
-    wrapper.style.height = w + 'px';
-    wrapper.style.transform = 'translate(-50%, -50%) rotate(90deg)';
-    wrapper.style.transformOrigin = 'center center';
-    wrapper.style.zIndex = '999999';
-    wrapper.style.display = 'block';
-    
-    btn.innerHTML = '✕';
-    btn.style.bottom = 'auto';
-    btn.style.top = '12px';
-    btn.style.left = '12px';
-    btn.style.right = 'auto';
-  } else {
-    // ── Exit Fullscreen ──
-    wrapper.classList.remove('webview-fullscreen');
-    
-    wrapper.style.width = '';
-    wrapper.style.height = '';
-    wrapper.style.position = '';
-    wrapper.style.top = '';
-    wrapper.style.left = '';
-    wrapper.style.transform = '';
-    wrapper.style.transformOrigin = '';
-    wrapper.style.zIndex = '';
-    
-    btn.innerHTML = '⛶';
-    btn.style.top = 'auto';
-    btn.style.bottom = '12px';
-    btn.style.right = '12px';
-    btn.style.left = 'auto';
-    
-    syncPlayerPosition();
-  }
-}
-
-function restoreFloatingPlayer() {
-  switchMainSection('livetv');
-}
-
-function closeFloatingPlayer() {
-  var video = document.getElementById('livetv-player');
-  if (video) video.pause();
-  
-  var wrapper = document.querySelector('.player-wrapper');
-  if (wrapper) {
-    wrapper.classList.remove('player-floating');
-    wrapper.style.position = '';
-    wrapper.style.top = '';
-    wrapper.style.left = '';
-    wrapper.style.width = '';
-    wrapper.style.height = '';
-    wrapper.style.transform = '';
-    wrapper.style.zIndex = '';
-    wrapper.style.display = 'none';
-  }
-}
+// Old floating/fullscreen player code removed — using native ExoPlayer in Kotlin
 
 // ============================================================================
 // ── LIVE TV PLAYER CONTROLLER SYSTEM (v5) ───────────────────────────────────
@@ -5836,9 +5723,9 @@ function onTVChannelClick(c) {
       var parts = url.split('||');
       if (parts.length >= 3) url = parts[2];
     }
-    AndroidBridge.playNativeStream(url, c.name);
+    AndroidBridge.playNativeStream(url, c.name, c.id);
   } else {
-    playTVChannel(c);
+    if (c.streamUrl) window.open(c.streamUrl, '_blank');
   }
 }
 
@@ -6015,41 +5902,8 @@ function showPlayerContainer() {
 var originalSwitchMainSection = switchMainSection;
 switchMainSection = function(sec) {
   originalSwitchMainSection(sec);
-  
-  var video = document.getElementById('livetv-player');
-  var wrapper = document.querySelector('.player-wrapper');
-  
-  if (sec === 'livetv') {
-    if (!tvInitialized) {
-      initLiveTV();
-    }
-    // If player is floating, restore it back to TV container
-    if (wrapper && wrapper.classList.contains('player-floating')) {
-      wrapper.classList.remove('player-floating');
-      wrapper.style.position = '';
-      wrapper.style.top = '';
-      wrapper.style.left = '';
-      wrapper.style.width = '';
-      wrapper.style.height = '';
-      wrapper.style.transform = '';
-      wrapper.style.zIndex = '';
-      syncPlayerPosition();
-    }
-  } else {
-    // If a channel stream is active and playing, float it instead of pausing!
-    if (video && !video.paused && wrapper) {
-      wrapper.classList.add('player-floating');
-      wrapper.style.position = '';
-      wrapper.style.top = '';
-      wrapper.style.left = '';
-      wrapper.style.width = '';
-      wrapper.style.height = '';
-      wrapper.style.transform = '';
-      wrapper.style.zIndex = '';
-      wrapper.style.display = 'block';
-    } else {
-      if (video) video.pause();
-    }
+  if (sec === 'livetv' && !tvInitialized) {
+    initLiveTV();
   }
 };
 
