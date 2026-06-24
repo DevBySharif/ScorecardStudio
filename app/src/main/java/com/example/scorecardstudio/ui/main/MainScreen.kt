@@ -20,6 +20,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation3.runtime.NavKey
 import com.example.scorecardstudio.WebAppInterface
+import com.example.scorecardstudio.ui.player.VideoPlayerOverlay
+import com.example.scorecardstudio.ui.player.VideoPlayerState
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -45,87 +48,96 @@ fun MainScreen(
     uploadCallback = null
   }
 
-  AndroidView(
-    factory = { context ->
-      var overlayShowing = false
+  val playRequest by VideoPlayerState.playRequest.collectAsState()
 
-      WebView(context).apply {
-        settings.apply {
-          javaScriptEnabled = true
-          domStorageEnabled = true
-          allowFileAccess = false
-          allowContentAccess = false
-          allowUniversalAccessFromFileURLs = true
-          allowFileAccessFromFileURLs = true
-          mediaPlaybackRequiresUserGesture = false
-          cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-          mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-          saveFormData = true
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            safeBrowsingEnabled = false
-          }
-          userAgentString = "Mozilla/5.0 (Linux; Android 14; SM-A146U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.200 Mobile Safari/537.36"
-        }
-        CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-        webViewClient = object : WebViewClient() {
-          override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-            val url = request?.url?.toString() ?: return false
-            if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("file:///android_asset/")) {
-              return false
+  if (playRequest != null) {
+    VideoPlayerOverlay(
+      request = playRequest!!,
+      onClose = { VideoPlayerState.clearRequest() }
+    )
+  } else {
+    AndroidView(
+      factory = { context ->
+        var overlayShowing = false
+
+        WebView(context).apply {
+          settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            allowFileAccess = false
+            allowContentAccess = false
+            allowUniversalAccessFromFileURLs = true
+            allowFileAccessFromFileURLs = true
+            mediaPlaybackRequiresUserGesture = false
+            cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+            mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            saveFormData = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+              safeBrowsingEnabled = false
             }
-            return true
+            userAgentString = "Mozilla/5.0 (Linux; Android 14; SM-A146U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.200 Mobile Safari/537.36"
           }
-          override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
-            handler?.proceed()
+          CookieManager.getInstance().setAcceptCookie(true)
+          CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+          webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+              val url = request?.url?.toString() ?: return false
+              if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("file:///android_asset/")) {
+                return false
+              }
+              return true
+            }
+            override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
+              handler?.proceed()
+            }
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+              super.onPageStarted(view, url, favicon)
+            }
           }
-          override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-            super.onPageStarted(view, url, favicon)
-          }
-        }
-        webChromeClient = object : WebChromeClient() {
-          override fun onShowFileChooser(
-            webView: WebView?,
-            filePathCallback: ValueCallback<Array<Uri>>?,
-            fileChooserParams: FileChooserParams?
-          ): Boolean {
-            uploadCallback?.onReceiveValue(null)
-            uploadCallback = filePathCallback
-            try {
-              filePickerLauncher.launch("image/*")
-            } catch (e: Exception) {
+          webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+              webView: WebView?,
+              filePathCallback: ValueCallback<Array<Uri>>?,
+              fileChooserParams: FileChooserParams?
+            ): Boolean {
               uploadCallback?.onReceiveValue(null)
-              uploadCallback = null
-              return false
-            }
-            return true
-          }
-        }
-        addJavascriptInterface(object {
-          @JavascriptInterface
-          fun setOverlayState(visible: Boolean) {
-            overlayShowing = visible
-          }
-        }, "NativeBridge")
-        addJavascriptInterface(WebAppInterface(context), "AndroidBridge")
-
-        setOnKeyListener { _, keyCode, event ->
-          if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-            if (overlayShowing) {
-              evaluateJavascript("closeMatchDetail()", null)
-              overlayShowing = false
-              return@setOnKeyListener true
+              uploadCallback = filePathCallback
+              try {
+                filePickerLauncher.launch("image/*")
+              } catch (e: Exception) {
+                uploadCallback?.onReceiveValue(null)
+                uploadCallback = null
+                return false
+              }
+              return true
             }
           }
-          false
-        }
-        isFocusable = true
-        isFocusableInTouchMode = true
-        requestFocus()
+          addJavascriptInterface(object {
+            @JavascriptInterface
+            fun setOverlayState(visible: Boolean) {
+              overlayShowing = visible
+            }
+          }, "NativeBridge")
+          addJavascriptInterface(WebAppInterface(context), "AndroidBridge")
 
-        loadUrl("file:///android_asset/index.html")
-      }
-    },
-    modifier = modifier.fillMaxSize()
-  )
+          setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+              if (overlayShowing) {
+                evaluateJavascript("closeMatchDetail()", null)
+                overlayShowing = false
+                return@setOnKeyListener true
+              }
+            }
+            false
+          }
+          isFocusable = true
+          isFocusableInTouchMode = true
+          requestFocus()
+
+          loadUrl("file:///android_asset/index.html")
+        }
+      },
+      modifier = modifier.fillMaxSize()
+    )
+  }
 }
