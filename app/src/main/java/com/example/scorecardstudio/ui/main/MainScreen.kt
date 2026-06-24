@@ -19,6 +19,7 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,6 +65,7 @@ fun MainScreen(
   var playerUrl by remember { mutableStateOf<String?>(null) }
   var playerTitle by remember { mutableStateOf("") }
   var webViewRef by remember { mutableStateOf<WebView?>(null) }
+  var isFullscreen by remember { mutableStateOf(false) }
   val context = LocalContext.current
 
   val exoPlayer = remember {
@@ -101,44 +103,69 @@ fun MainScreen(
 
   Column(modifier = modifier.fillMaxSize()) {
     if (playerUrl != null) {
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .background(Color.Black)
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-          verticalAlignment = Alignment.CenterVertically
+      if (isFullscreen) {
+        Box(
+          modifier = Modifier.fillMaxSize().background(Color.Black)
         ) {
-          IconButton(onClick = { playerUrl = null }) {
-            Icon(
-              Icons.AutoMirrored.Filled.ArrowBack,
-              contentDescription = "Close",
-              tint = Color.White
-            )
+          AndroidView(
+            factory = { ctx ->
+              PlayerView(ctx).apply {
+                player = exoPlayer
+                useController = true
+                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                setBackgroundColor(android.graphics.Color.BLACK)
+              }
+            },
+            modifier = Modifier.fillMaxSize()
+          )
+          Row(
+            modifier = Modifier.fillMaxWidth().padding(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            IconButton(onClick = { playerUrl = null }) {
+              Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close", tint = Color.White)
+            }
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = {
+              isFullscreen = false
+              (context as? androidx.activity.ComponentActivity)?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }) {
+              Text("⛶", color = Color.White, fontSize = 18.sp)
+            }
           }
-          Spacer(Modifier.width(4.dp))
-          Text(
-            text = playerTitle,
-            color = Color.White,
-            fontSize = 14.sp
+        }
+      } else {
+        Column(
+          modifier = Modifier.fillMaxWidth().background(Color.Black)
+        ) {
+          Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            IconButton(onClick = { playerUrl = null }) {
+              Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close", tint = Color.White)
+            }
+            Spacer(Modifier.width(4.dp))
+            Text(text = playerTitle, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+            IconButton(onClick = {
+              isFullscreen = true
+              (context as? androidx.activity.ComponentActivity)?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            }) {
+              Text("⛶", color = Color.White, fontSize = 18.sp)
+            }
+          }
+          AndroidView(
+            factory = { ctx ->
+              PlayerView(ctx).apply {
+                player = exoPlayer
+                useController = true
+                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                setBackgroundColor(android.graphics.Color.BLACK)
+              }
+            },
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
           )
         }
-        AndroidView(
-          factory = { ctx ->
-            PlayerView(ctx).apply {
-              player = exoPlayer
-              useController = true
-              resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-              setBackgroundColor(android.graphics.Color.BLACK)
-            }
-          },
-          modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-        )
       }
     }
 
