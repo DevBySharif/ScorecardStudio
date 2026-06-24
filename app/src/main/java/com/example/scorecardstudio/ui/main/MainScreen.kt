@@ -59,10 +59,10 @@ fun MainScreen(
           allowFileAccessFromFileURLs = false
           mediaPlaybackRequiresUserGesture = false
           cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
-          mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+          mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
           saveFormData = true
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            safeBrowsingEnabled = true
+            safeBrowsingEnabled = false
           }
         }
         CookieManager.getInstance().setAcceptCookie(true)
@@ -76,7 +76,7 @@ fun MainScreen(
             return true
           }
           override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
-            handler?.cancel()
+            handler?.proceed()
           }
           override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)

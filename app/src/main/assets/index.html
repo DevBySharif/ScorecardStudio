@@ -5327,6 +5327,8 @@ function onTVChannelClick(c) {
   playTVChannel(c);
 }
 
+var loadingTimeout = null;
+
 function playTVChannel(c) {
   var video = document.getElementById('livetv-player');
   var loading = document.getElementById('player-loading');
@@ -5339,6 +5341,7 @@ function playTVChannel(c) {
   
   if (activeStreamUrl === c.streamUrl) {
     activeStreamUrl = '';
+    if (loadingTimeout) { clearTimeout(loadingTimeout); loadingTimeout = null; }
     if (hls) { hls.destroy(); hls = null; }
     if (dashPlayer) { dashPlayer.destroy(); dashPlayer = null; }
     video.pause();
@@ -5356,6 +5359,17 @@ function playTVChannel(c) {
   loadingChannel.innerText = c.name;
   loading.style.opacity = '1';
   loading.style.pointerEvents = 'auto';
+  
+  if (loadingTimeout) clearTimeout(loadingTimeout);
+  loadingTimeout = setTimeout(function() {
+    if (loadingSpinner && loadingSpinner.style.display !== 'none') {
+      if (loadingTitle) loadingTitle.innerText = '⚠️ Connection Timeout';
+      loadingChannel.innerText = c.name + ' - Stream took too long to load';
+      if (loadingSpinner) loadingSpinner.style.display = 'none';
+      loading.style.opacity = '1';
+      loading.style.pointerEvents = 'none';
+    }
+  }, 15000);
   
   if (fallbackBtn) fallbackBtn.style.display = 'block';
   
@@ -5403,6 +5417,7 @@ function playTVChannel(c) {
       }
       dashPlayer.initialize(video, playUrl, true);
       dashPlayer.on(dashjs.MediaPlayer.events.PLAYBACK_PLAYING, function() {
+        if (loadingTimeout) clearTimeout(loadingTimeout);
         loading.style.opacity = '0';
         loading.style.pointerEvents = 'none';
       });
@@ -5422,19 +5437,23 @@ function playTVChannel(c) {
   } 
   // Use Hls.js for m3u8 streams
   else if (typeof Hls !== 'undefined' && Hls.isSupported() && playUrl.indexOf('.mpd') === -1) {
+    var hlsRetries = 0;
+    var hlsMediaRetries = 0;
     hls = new Hls({
-      enableWorker: true,
-      maxBufferLength: 10,
-      liveBackBufferLength: 5,
-      lowLatencyMode: true
+      enableWorker: false,
+      maxBufferLength: 30,
+      liveBackBufferLength: 10,
+      lowLatencyMode: false
     });
     hls.loadSource(playUrl);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, function() {
       video.play().then(function() {
+        if (loadingTimeout) clearTimeout(loadingTimeout);
         loading.style.opacity = '0';
         loading.style.pointerEvents = 'none';
       }).catch(function() {
+        if (loadingTimeout) clearTimeout(loadingTimeout);
         loading.style.opacity = '0';
         loading.style.pointerEvents = 'none';
       });
@@ -5443,17 +5462,17 @@ function playTVChannel(c) {
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
-            hls.startLoad(); break;
+            if (hlsRetries < 3) { hlsRetries++; hls.startLoad(); return; }
+            break;
           case Hls.ErrorTypes.MEDIA_ERROR:
-            hls.recoverMediaError(); break;
-          default:
-            if (loadingTitle) loadingTitle.innerText = '⚠️ Stream Unavailable';
-            loadingChannel.innerText = 'Try another channel or tap OPEN LINK';
-            if (loadingSpinner) loadingSpinner.style.display = 'none';
-            loading.style.opacity = '1';
-            loading.style.pointerEvents = 'none';
+            if (hlsMediaRetries < 2) { hlsMediaRetries++; hls.recoverMediaError(); return; }
             break;
         }
+        if (loadingTitle) loadingTitle.innerText = '⚠️ Stream Unavailable';
+        loadingChannel.innerText = 'Try another channel or tap OPEN LINK';
+        if (loadingSpinner) loadingSpinner.style.display = 'none';
+        loading.style.opacity = '1';
+        loading.style.pointerEvents = 'none';
       }
     });
   } else {
