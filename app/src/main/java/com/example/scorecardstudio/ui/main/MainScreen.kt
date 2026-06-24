@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -67,6 +68,7 @@ fun MainScreen(
   var webViewRef by remember { mutableStateOf<WebView?>(null) }
   var isFullscreen by remember { mutableStateOf(false) }
   var pendingCid by remember { mutableStateOf<String?>(null) }
+  var overlayShowing by remember { mutableStateOf(false) }
   val context = LocalContext.current
 
   val exoPlayer = remember {
@@ -132,9 +134,15 @@ fun MainScreen(
     uploadCallback = null
   }
 
-  androidx.activity.compose.BackHandler(playerUrl != null || isFullscreen) {
-    if (isFullscreen) isFullscreen = false
-    else playerUrl = null
+  androidx.activity.compose.BackHandler(playerUrl != null || isFullscreen || overlayShowing) {
+    if (overlayShowing) {
+      webViewRef?.evaluateJavascript("closeMatchDetail()", null)
+      overlayShowing = false
+    } else if (isFullscreen) {
+      isFullscreen = false
+    } else {
+      playerUrl = null
+    }
   }
 
   Column(modifier = modifier.fillMaxSize()) {
@@ -164,7 +172,7 @@ fun MainScreen(
           modifier = Modifier.fillMaxWidth().background(Color.Black)
         ) {
           Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+            modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
             IconButton(onClick = { playerUrl = null }) {
@@ -193,8 +201,6 @@ fun MainScreen(
 
     AndroidView(
       factory = { ctx ->
-        var overlayShowing = false
-
         WebView(ctx).apply {
           webViewRef = this
           settings.apply {
@@ -260,14 +266,6 @@ fun MainScreen(
             pendingCid = cid
           }, "AndroidBridge")
 
-          setOnKeyListener { _, keyCode, event ->
-            if (keyCode == KeyEvent.KEYCODE_BACK && overlayShowing && event.action == KeyEvent.ACTION_UP) {
-              evaluateJavascript("closeMatchDetail()", null)
-              overlayShowing = false
-              return@setOnKeyListener true
-            }
-            false
-          }
           isFocusable = true
           isFocusableInTouchMode = true
           requestFocus()
