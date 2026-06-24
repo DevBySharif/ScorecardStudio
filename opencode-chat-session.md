@@ -25,19 +25,18 @@
 
 ### Request: Live TV stuck on "CONNECTING TO LIVE FEED..."
 
-**Root causes:**
-- `MIXED_CONTENT_NEVER_ALLOW` blocked HTTP streams (56% of channels)
-- `handler?.cancel()` blocked HTTPS streams with SSL errors
-- Safe browsing blocked IP-based stream URLs
-- HLS.js error handler retried silently forever with no UI feedback
-- No loading timeout → spinner never stopped
-- Web Workers not supported in WebView, low-latency mode incompatible
-
-**Fixes:**
+**Round 1 Fixes:**
 
 | File | Change |
 |------|--------|
 | `MainScreen.kt` | `MIXED_CONTENT_ALWAYS_ALLOW`, `safeBrowsingEnabled = false`, SSL `handler?.proceed()` |
 | `index.html` | HLS `enableWorker: false`, `lowLatencyMode: false`, retry limits (3 NETWORK, 2 MEDIA), 15s timeout, UI error messages |
 
-**Deployed:** Both Studio & Lite via ADB wireless + pushed to GitHub
+**Round 2 Fixes (CORS + Native HLS):**
+
+| File | Change |
+|------|--------|
+| `MainScreen.kt` | `allowUniversalAccessFromFileURLs=true` (fixes CORS for all stream requests) |
+| `index.html` | Native Android HLS playback first → 5s fallback to Hls.js |
+
+**Deployed:** Both Studio & Lite via ADB wireless + pushed to GitHub (commit `b6d04d5`)

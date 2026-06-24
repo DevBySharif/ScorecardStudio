@@ -4995,6 +4995,22 @@ function setPinnedIds(ids) {
   localStorage.setItem('tvPinned', json);
   try { if (window.AndroidBridge && window.AndroidBridge.setSessionData) AndroidBridge.setSessionData('tvPinned', json); } catch(e) {}
 }
+function getWorkingIds() {
+  try {
+    if (window.AndroidBridge && window.AndroidBridge.getSessionData) {
+      var val = AndroidBridge.getSessionData('workingStreams');
+      if (val) return JSON.parse(val);
+    }
+  } catch(e) {}
+  try { return JSON.parse(localStorage.getItem('workingStreams') || '[]'); } catch(e) { return []; }
+}
+function markStreamWorking(id) {
+  var ids = getWorkingIds();
+  if (ids.indexOf(id) === -1) ids.push(id);
+  var json = JSON.stringify(ids);
+  localStorage.setItem('workingStreams', json);
+  try { if (window.AndroidBridge && window.AndroidBridge.setSessionData) AndroidBridge.setSessionData('workingStreams', json); } catch(e) {}
+}
 function togglePin(id) {
   var ids = getPinnedIds();
   var idx = ids.indexOf(id);
@@ -5115,12 +5131,16 @@ function getFilteredChannels() {
   });
   if (selectedTVCategory !== '⭐ Favorites') {
     var pinnedIds = getPinnedIds();
+    var workingIds = getWorkingIds();
     var pinned = [];
-    var unpinned = [];
+    var working = [];
+    var rest = [];
     result.forEach(function(c) {
-      if (pinnedIds.indexOf(c.id) !== -1) pinned.push(c); else unpinned.push(c);
+      if (pinnedIds.indexOf(c.id) !== -1) pinned.push(c);
+      else if (workingIds.indexOf(c.id) !== -1) working.push(c);
+      else rest.push(c);
     });
-    result = pinned.concat(unpinned);
+    result = pinned.concat(working).concat(rest);
   }
   return result;
 }
@@ -5283,9 +5303,12 @@ function renderNextBatch() {
   var htmlString = nextBatch.map(function(c) {
     var isActive = activeStreamUrl && activeStreamUrl === c.streamUrl ? 'active' : '';
     var isDrm = c.streamUrl.indexOf('clearkey') !== -1 || c.streamUrl.indexOf('.mpd') !== -1;
+    var worksNow = getWorkingIds().indexOf(c.id) !== -1;
     var badgeHtml = isDrm
       ? '<div class="tv-card-live-dot" style="color:#FF6B35;"><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#FF6B35;"></span> DRM</div>'
-      : '<div class="tv-card-live-dot"><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#9FEF00;animation:flash 1.5s infinite;"></span> LIVE</div>';
+      : (worksNow
+        ? '<div class="tv-card-live-dot" style="color:#9FEF00;"><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#9FEF00;animation:flash 1.5s infinite;"></span> ✓ Works</div>'
+        : '<div class="tv-card-live-dot"><span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#9FEF00;animation:flash 1.5s infinite;"></span> LIVE</div>');
     
     var pinnedNow = isPinned(c.id);
     var safeC = {
@@ -5418,6 +5441,7 @@ function playTVChannel(c) {
       dashPlayer.initialize(video, playUrl, true);
       dashPlayer.on(dashjs.MediaPlayer.events.PLAYBACK_PLAYING, function() {
         if (loadingTimeout) clearTimeout(loadingTimeout);
+        try { markStreamWorking(c.id); } catch(e) {}
         loading.style.opacity = '0';
         loading.style.pointerEvents = 'none';
       });
@@ -5496,6 +5520,7 @@ function playTVChannel(c) {
     video.play().then(function() {
       clearTimeout(hlsFallbackTimer);
       if (loadingTimeout) clearTimeout(loadingTimeout);
+      try { markStreamWorking(c.id); } catch(e) {}
       loading.style.opacity = '0';
       loading.style.pointerEvents = 'none';
     }).catch(function() {
@@ -5515,10 +5540,12 @@ function playTVChannel(c) {
     hls.on(Hls.Events.MANIFEST_PARSED, function() {
       video.play().then(function() {
         if (loadingTimeout) clearTimeout(loadingTimeout);
+        try { markStreamWorking(c.id); } catch(e) {}
         loading.style.opacity = '0';
         loading.style.pointerEvents = 'none';
       }).catch(function() {
         if (loadingTimeout) clearTimeout(loadingTimeout);
+        try { markStreamWorking(c.id); } catch(e) {}
         loading.style.opacity = '0';
         loading.style.pointerEvents = 'none';
       });
@@ -5544,9 +5571,11 @@ function playTVChannel(c) {
     video.src = playUrl;
     video.load();
     video.play().then(function() {
+      try { markStreamWorking(c.id); } catch(e) {}
       loading.style.opacity = '0';
       loading.style.pointerEvents = 'none';
     }).catch(function() {
+      try { markStreamWorking(c.id); } catch(e) {}
       loading.style.opacity = '0';
       loading.style.pointerEvents = 'none';
     });
