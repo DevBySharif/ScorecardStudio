@@ -123,6 +123,13 @@ class WebAppInterface(
     }
 
     @JavascriptInterface
+    fun toast(msg: String) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    @JavascriptInterface
     fun fixApp() {
         try {
             Handler(Looper.getMainLooper()).post {
