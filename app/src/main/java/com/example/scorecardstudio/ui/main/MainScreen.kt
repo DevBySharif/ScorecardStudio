@@ -100,6 +100,48 @@ fun MainScreen(
   }
 
   Column(modifier = modifier.fillMaxSize()) {
+    if (playerUrl != null) {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .background(Color.Black)
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          IconButton(onClick = { playerUrl = null }) {
+            Icon(
+              Icons.AutoMirrored.Filled.ArrowBack,
+              contentDescription = "Close",
+              tint = Color.White
+            )
+          }
+          Spacer(Modifier.width(4.dp))
+          Text(
+            text = playerTitle,
+            color = Color.White,
+            fontSize = 14.sp
+          )
+        }
+        AndroidView(
+          factory = { ctx ->
+            PlayerView(ctx).apply {
+              player = exoPlayer
+              useController = true
+              resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+              setBackgroundColor(android.graphics.Color.BLACK)
+            }
+          },
+          modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+        )
+      }
+    }
+
     AndroidView(
       factory = { ctx ->
         var overlayShowing = false
@@ -192,47 +234,5 @@ fun MainScreen(
       },
       modifier = if (playerUrl != null) Modifier.weight(1f) else Modifier.fillMaxSize()
     )
-
-    if (playerUrl != null) {
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .background(Color.Black)
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          IconButton(onClick = { playerUrl = null }) {
-            Icon(
-              Icons.AutoMirrored.Filled.ArrowBack,
-              contentDescription = "Close",
-              tint = Color.White
-            )
-          }
-          Spacer(Modifier.width(4.dp))
-          Text(
-            text = playerTitle,
-            color = Color.White,
-            fontSize = 14.sp
-          )
-        }
-        AndroidView(
-          factory = { ctx ->
-            PlayerView(ctx).apply {
-              player = exoPlayer
-              useController = true
-              resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-              setBackgroundColor(android.graphics.Color.BLACK)
-            }
-          },
-          modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-        )
-      }
-    }
   }
 }
