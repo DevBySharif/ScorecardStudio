@@ -1,26 +1,29 @@
 # opencode Chat Session — ScorecardStudio
 
-**Workflow:** Session chat saved → App changes built & deployed (both flavors) → HTML changes pushed to GitHub
-
 ---
 
 ## Session 1 — Wed Jun 24 2026
 
 ### 1. Session Persistence
-- Stop clearing cookies/cache, SharedPreferences SessionDataStore, JS bridge, dual native+localStorage
+Stop clearing cookies/cache, SharedPreferences SessionDataStore, JS bridge, dual storage
 
-### 2. Live TV Fix — Round 1
-- Mixed content allow, safe browsing off, SSL proceed, HLS config fixes, retry limits, 15s timeout
+### 2-4. Live TV Fixes (WebView attempts)
+Mixed content, SSL, CORS, native HLS, Chrome UA, canPlayType detection
 
-### 3. Live TV Fix — Round 2
-- `allowUniversalAccessFromFileURLs=true` (CORS), native HLS first → Hls.js fallback
+### 5. ✅ Native ExoPlayer — The Real Fix *(latest)*
+**Problem:** WebView's `<video>` element + Hls.js can't reliably play most streams due to CORS, codec, and WebView limitations — even though they work in Chrome.
 
-### 4. Working Streams Priority
-- Track successful plays, sort working to top (after pinned), "✓ Works" badge
+**Solution:** Replaced in-WebView player with **Android ExoPlayer** (Google's native media player):
 
-### 5. 🌐 Open in Browser on Every Card *(latest)*
-- **🌐 button** on each channel card → tap to instantly open stream in external browser
-- **"OPEN IN BROWSER" button** inside loading overlay on any error (timeout, DRM, unavailable)
-- Works for all failure paths: timeout, network error, media error, DRM error, DASH missing
+| File | What |
+|------|------|
+| `VideoPlayerState.kt` | Singleton state holder for play requests |
+| `VideoPlayerOverlay.kt` | Full-screen ExoPlayer in Compose with close button |
+| `WebAppInterface.kt` | `playNativeStream(url, title)` JS bridge method |
+| `MainScreen.kt` | Shows ExoPlayer overlay when state changes |
+| `index.html` | `onTVChannelClick` now calls native player first |
+| `build.gradle.kts` | Added Media3 ExoPlayer + HLS dependencies |
 
-**Deployed:** Both Studio & Lite (force reinstalled) + GitHub (commit `fa91650`)
+**Why this works:** ExoPlayer runs natively on Android's media stack — no CORS, no WebView limits, no User-Agent blocking. The same engine that Chrome uses.
+
+**Deployed:** Both Studio & Lite (force install) + GitHub (`adfe998`)

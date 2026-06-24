@@ -5075,12 +5075,15 @@ function renderTVCategories() {
   });
   otherCats.sort();
 
-  var allCats = ['⭐ Favorites'].concat(['All']).concat(subcatKeys).concat(priorityOthers).concat(otherCats);
+  var workingIds = getWorkingIds();
+  var allCats = ['⭐ Favorites'].concat(['✅ Working']).concat(['All']).concat(subcatKeys).concat(priorityOthers).concat(otherCats);
 
   container.innerHTML = allCats.map(function(key) {
     var count;
     if (key === '⭐ Favorites') {
       count = getPinnedIds().length;
+    } else if (key === '✅ Working') {
+      count = workingIds.length;
     } else if (key === 'All') {
       count = TV_CHANNELS.length;
     } else {
@@ -5089,8 +5092,8 @@ function renderTVCategories() {
     if (count === 0) return '';
     
     var sc = TV_SUBCATS.find(function(s) { return s.key === key; });
-    var emoji = key === '⭐ Favorites' ? '⭐' : (key === 'All' ? '🌍' : (sc ? sc.emoji : (MAIN_CAT_EMOJIS[key] || '🌍')));
-    var label = key === '⭐ Favorites' ? 'Favorites' : (key === 'All' ? 'All Channels' : (sc ? sc.label : key));
+    var emoji = key === '⭐ Favorites' ? '⭐' : (key === '✅ Working' ? '✅' : (key === 'All' ? '🌍' : (sc ? sc.emoji : (MAIN_CAT_EMOJIS[key] || '🌍'))));
+    var label = key === '⭐ Favorites' ? 'Favorites' : (key === '✅ Working' ? 'Working' : (key === 'All' ? 'All Channels' : (sc ? sc.label : key)));
     var isActive = key === selectedTVCategory ? 'active' : '';
     
     return '<div class="tv-pill ' + isActive + '" onclick="selectTVCategory(\'' + key.replace(/'/g, "\\'") + '\')">'
@@ -5124,6 +5127,10 @@ function getFilteredChannels() {
     if (selectedTVCategory === '⭐ Favorites') {
       var pinnedIds = getPinnedIds();
       return pinnedIds.indexOf(c.id) !== -1 && (!query || c.name.toLowerCase().indexOf(query) !== -1);
+    }
+    if (selectedTVCategory === '✅ Working') {
+      var workingIds = getWorkingIds();
+      return workingIds.indexOf(c.id) !== -1 && (!query || c.name.toLowerCase().indexOf(query) !== -1);
     }
     var matchCat = selectedTVCategory === 'All' || c.subcat === selectedTVCategory;
     var matchQuery = !query || c.name.toLowerCase().indexOf(query) !== -1;
